@@ -1,0 +1,171 @@
+.tableContainer {
+  width: 100%;
+  overflow-x: auto;
+}
+.tableContainer h2 {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: #2f2f2f;
+}
+thead {
+  background-color: #1e1e1e;
+}
+th, td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #444;
+}
+tbody tr {
+  transition: background-color 0.2s ease-in-out;
+}
+.clickableRow:hover {
+  background-color: #3a3a3a;
+  cursor: pointer;
+}
+.status {
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  text-transform: capitalize;
+  font-weight: bold;
+  white-space: nowrap;
+}
+.pending { background-color: #ffc107; color: #212529; }
+.approved { background-color: #28a745; color: white; }
+.rejected { background-color: #dc3545; color: white; }
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+.actions button, .actions a {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  color: white;
+  display: inline-block;
+  white-space: nowrap;
+}
+.copiarButton { background-color: #007bff; }
+.enviarButton { background-color: #25D366; }
+.cobrarButton { background-color: #fd7e14; }
+.deleteButton { background-color: #dc3545; }
+.descriptionContent {
+  display: flex;
+  align-items: baseline;
+  max-width: 250px;
+}
+.descriptionText {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.verMaisButton {
+  background: none;
+  border: none;
+  color: #00aaff;
+  cursor: pointer;
+  padding: 0 0 0 5px;
+  font-size: inherit;
+  font-family: inherit;
+  flex-shrink: 0; 
+}
+.verMaisButton:hover {
+  text-decoration: underline;
+}
+.filterBar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+.filterInput {
+  padding: 0.75rem;
+  border-radius: 4px;
+  border: 1px solid #555;
+  background-color: #3f3f3f;
+  color: white;
+  font-size: 1rem;
+}
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 2rem;
+}
+.pagination button {
+  background-color: #007bff;
+  color: white;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.pagination button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+/* === NOVOS ESTILOS PARA OS ÍCONES === */
+
+.clientCell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem; /* Espaço entre o nome e os ícones */
+}
+
+.socialIcons a {
+  display: inline-block;
+  margin-left: 0.5rem;
+  transition: transform 0.2s;
+}
+
+.socialIcons a:hover {
+  transform: scale(1.2);
+}
+
+.socialIcons svg {
+  width: 30px;
+  height: 30px;
+  vertical-align: middle;
+}
+
+/* ==================================== */
+
+@media (max-width: 768px) {
+  thead { display: none; }
+  table, tbody, tr, td { display: block; width: 100%; }
+  tr { margin-bottom: 1rem; border: 1px solid #444; border-radius: 8px; }
+  td {
+    text-align: right;
+    padding-left: 50%;
+    position: relative;
+    border-bottom: 1px dotted #555;
+  }
+  td:last-child { border-bottom: none; }
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 1rem;
+    width: calc(50% - 2rem);
+    text-align: left;
+    font-weight: bold;
+    white-space: nowrap;
+  }
+  .actions { justify-content: flex-end; }
+  .descriptionContent { max-width: none; }
+  .descriptionText { white-space: normal; }
+  .clientCell { justify-content: flex-end; } /* Alinha o conteúdo da célula de cliente à direita no mobile */
+  .clientCell span {
+    order: 2; /* Coloca o nome depois dos ícones no mobile */
+  }
+  .socialIcons {
+    order: 1;
+  }
+}

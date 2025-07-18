@@ -1,0 +1,12 @@
+.redirectText {
+  text-align: center;
+  margin-top: 1.5rem;
+}
+.redirectText a {
+  color: #00aaff;
+  font-weight: bold;
+  text-decoration: none;
+}
+.redirectText a:hover {
+  text-decoration: underline;
+}

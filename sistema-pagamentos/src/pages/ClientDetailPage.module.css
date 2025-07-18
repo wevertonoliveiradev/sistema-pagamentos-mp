@@ -1,0 +1,61 @@
+.pageContainer {
+  width: 100%;
+  max-width: 1000px;
+}
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.backButton {
+  background-color: #6c757d;
+  color: white;
+  padding: 0.7rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: bold;
+}
+.summaryContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 3rem;
+}
+.summaryCard {
+  background-color: #2f2f2f;
+  padding: 1.5rem;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border-left: 5px solid;
+}
+.summaryCard span {
+  font-size: 1rem;
+  color: #ccc;
+}
+.summaryCard strong {
+  font-size: 2rem;
+}
+.summaryCard.approved {
+  border-left-color: #28a745;
+}
+.summaryCard.pending {
+  border-left-color: #ffc107;
+}
+.paymentsTable {
+  width: 100%;
+}
+.paymentsTable table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.paymentsTable th, .paymentsTable td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #444;
+}
+.paymentsTable thead {
+  background-color: #1e1e1e;
+}
