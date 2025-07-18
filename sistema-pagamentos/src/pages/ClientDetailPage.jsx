@@ -3,27 +3,27 @@ import { useParams, Link } from 'react-router-dom';
 import { doc, getDoc, collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import styles from './ClientDetailPage.module.css';
+import DescriptionModal from '../components/DescriptionModal';
 
 function ClientDetailPage() {
-  const { clientId } = useParams(); // Pega o ID do cliente da URL
+  const { clientId } = useParams();
   const [client, setClient] = useState(null);
   const [payments, setPayments] = useState([]);
   const [summary, setSummary] = useState({ approved: 0, pending: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
+  const [isDescModalOpen, setIsDescModalOpen] = useState(false);
+  const [selectedDescription, setSelectedDescription] = useState('');
+
   useEffect(() => {
-    // Função para buscar os dados do cliente e seus pagamentos
     const fetchData = async () => {
       setIsLoading(true);
-      
-      // 1. Busca os dados do cliente
       const clientRef = doc(db, 'clients', clientId);
       const clientSnap = await getDoc(clientRef);
 
       if (clientSnap.exists()) {
         setClient(clientSnap.data());
 
-        // 2. Busca os pagamentos associados a este cliente
         const paymentsQuery = query(
           collection(db, 'payments'),
           where('clientId', '==', clientId),
@@ -33,9 +33,8 @@ function ClientDetailPage() {
         const paymentsData = paymentsSnap.docs.map(doc => doc.data());
         setPayments(paymentsData);
 
-        // 3. Calcula o resumo (saldo)
         const approvedTotal = paymentsData
-          .filter(p => p.status === 'approved')
+          .filter(p => p.status === 'approved' || p.status === 'settled')
           .reduce((sum, p) => sum + p.value, 0);
         
         const pendingTotal = paymentsData
@@ -53,11 +52,27 @@ function ClientDetailPage() {
     fetchData();
   }, [clientId]);
 
+  // 1. ADICIONA A FUNÇÃO getStatusInfo
+  const getStatusInfo = (status) => {
+    switch (status) {
+        case 'approved': return { text: 'Aprovado', className: styles.approved };
+        case 'pending': return { text: 'Pendente', className: styles.pending };
+        case 'rejected': case 'failure': case 'cancelled': return { text: 'Falhou', className: styles.rejected };
+        case 'settled': return { text: 'Baixado', className: styles.settled };
+        default: return { text: status || 'N/A', className: '' };
+    }
+  };
+
   const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   const formatDateToDDMMYYYY = (dateStr) => {
     if (!dateStr) return 'N/A';
     const [year, month, day] = dateStr.split('-');
     return `${day}/${month}/${year}`;
+  };
+
+  const handleShowDescription = (description) => {
+    setSelectedDescription(description);
+    setIsDescModalOpen(true);
   };
 
   if (isLoading) {
@@ -74,47 +89,77 @@ function ClientDetailPage() {
   }
 
   return (
-    <div className={styles.pageContainer}>
-      <header className={styles.header}>
-        <h1>Extrato de {client.name}</h1>
-        <Link to="/clientes" className={styles.backButton}>Voltar</Link>
-      </header>
-      
-      <div className={styles.summaryContainer}>
-        <div className={`${styles.summaryCard} ${styles.approved}`}>
-          <span>Total Aprovado</span>
-          <strong>{formatCurrency(summary.approved)}</strong>
+    <>
+      <div className={styles.pageContainer}>
+        <header className={styles.header}>
+          <h1>Extrato de {client.name}</h1>
+          <Link to="/clientes" className={styles.backButton}>Voltar</Link>
+        </header>
+        
+        <div className={styles.summaryContainer}>
+          <div className={`${styles.summaryCard} ${styles.approved}`}>
+            <span>Total Recebido (Aprovado + Baixado)</span>
+            <strong>{formatCurrency(summary.approved)}</strong>
+          </div>
+          <div className={`${styles.summaryCard} ${styles.pending}`}>
+            <span>Total Pendente</span>
+            <strong>{formatCurrency(summary.pending)}</strong>
+          </div>
         </div>
-        <div className={`${styles.summaryCard} ${styles.pending}`}>
-          <span>Total Pendente</span>
-          <strong>{formatCurrency(summary.pending)}</strong>
-        </div>
-      </div>
 
-      <div className={styles.paymentsTable}>
-        <h3>Histórico de Pagamentos</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Data da Live</th>
-              <th>Descrição</th>
-              <th>Valor</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment, index) => (
-              <tr key={index}>
-                <td>{formatDateToDDMMYYYY(payment.liveDate)}</td>
-                <td>{payment.description}</td>
-                <td>{formatCurrency(payment.value)}</td>
-                <td>{payment.status}</td>
+        <div className={styles.paymentsTable}>
+          <h3>Histórico de Pagamentos</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Data da Live</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map((payment, index) => {
+                const description = payment.description || '';
+                const isLongDescription = description.length > 50;
+                const statusInfo = getStatusInfo(payment.status); // 2. Usa a função para pegar texto e estilo
+
+                return (
+                  <tr key={index}>
+                    <td>{formatDateToDDMMYYYY(payment.liveDate)}</td>
+                    <td title={description}>
+                      <div className={styles.descriptionContent}>
+                        <span className={styles.descriptionText}>
+                          {isLongDescription ? `${description.substring(0, 50)}...` : description}
+                        </span>
+                        {isLongDescription && (
+                          <button onClick={() => handleShowDescription(description)} className={styles.verMaisButton}>
+                            (Ver mais)
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td>{formatCurrency(payment.value)}</td>
+                    {/* 3. ATUALIZA A CÉLULA DE STATUS */}
+                    <td>
+                      <span className={`${styles.status} ${statusInfo.className}`}>
+                        {statusInfo.text}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+      
+      <DescriptionModal
+        isOpen={isDescModalOpen}
+        onClose={() => setIsDescModalOpen(false)}
+        description={selectedDescription}
+      />
+    </>
   );
 }
 

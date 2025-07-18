@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, where, limit, startAfter, getDocs, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, orderBy, where, limit, startAfter, getDocs, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore'; // 1. Importa 'updateDoc'
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import styles from './PaymentList.module.css';
@@ -26,14 +26,17 @@ function PaymentList() {
     const [isDescModalOpen, setIsDescModalOpen] = useState(false);
     const [selectedDescription, setSelectedDescription] = useState('');
 
+    // 2. Função getStatusInfo ATUALIZADA
     const getStatusInfo = (status) => {
         switch (status) {
             case 'approved': return { text: 'Aprovado', className: styles.approved };
             case 'pending': return { text: 'Pendente', className: styles.pending };
             case 'rejected': case 'failure': case 'cancelled': return { text: 'Falhou', className: styles.rejected };
+            case 'settled': return { text: 'Baixado', className: styles.settled }; // NOVO STATUS
             default: return { text: status || 'N/A', className: '' };
         }
     };
+
     const formatCurrency = (value) => {
         if (typeof value !== 'number') return 'R$ 0,00';
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
@@ -44,6 +47,24 @@ function PaymentList() {
         if (!day || !month || !year) return dateStr;
         return `${day}/${month}/${year}`;
     };
+
+    // 3. NOVA FUNÇÃO para baixar o pagamento
+    const handleSettlePayment = async (paymentId) => {
+        const confirmationMessage = "Tem certeza que deseja baixar este pagamento?\n\nEsta ação é para pagamentos recebidos fora do sistema (ex: PIX, dinheiro) e não pode ser desfeita.";
+        if (window.confirm(confirmationMessage)) {
+            try {
+                const paymentRef = doc(db, 'payments', paymentId);
+                await updateDoc(paymentRef, {
+                    status: 'settled'
+                });
+                alert('Pagamento baixado com sucesso!');
+            } catch (error) {
+                console.error("Erro ao baixar pagamento: ", error);
+                alert('Ocorreu um erro ao tentar baixar o pagamento.');
+            }
+        }
+    };
+
     const handleDeletePayment = async (paymentId) => {
         if (window.confirm('Tem certeza que deseja excluir este pagamento? Esta ação é irreversível.')) {
             try { await deleteDoc(doc(db, 'payments', paymentId)); } 
@@ -123,6 +144,7 @@ function PaymentList() {
                     <option value="approved">Aprovado</option>
                     <option value="pending">Pendente</option>
                     <option value="rejected">Falhou</option>
+                    <option value="settled">Baixado</option> {/* Adicionado ao filtro */}
                 </select>
             </div>
             <h2>Pagamentos Gerados</h2>
@@ -179,6 +201,7 @@ function PaymentList() {
                                     <a href={`https://ig.me/m/${instagramHandle}`} target="_blank" rel="noopener noreferrer" title={`@${instagramHandle}`} onClick={(e) => e.stopPropagation()}><InstagramIcon /></a>
                                 )}
                             </div>
+                            {/* 4. BOTÃO ADICIONADO NA ORDEM CORRETA */}
                             <div className={styles.actions}>
                                 <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(payment.paymentLink); alert('Link copiado!'); }} className={styles.copiarButton}>Copiar</button>
                                 {cleanWhatsapp && payment.paymentLink && (
@@ -186,6 +209,9 @@ function PaymentList() {
                                         <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" className={styles.enviarButton}>Enviar</a>
                                         <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" className={styles.cobrarButton}>Cobrar</a>
                                     </>
+                                )}
+                                {payment.status === 'pending' && (
+                                    <button onClick={(e) => { e.stopPropagation(); handleSettlePayment(payment.id); }} className={styles.settleButton}>Baixar</button>
                                 )}
                                 <button onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }} className={styles.deleteButton}>Excluir</button>
                             </div>

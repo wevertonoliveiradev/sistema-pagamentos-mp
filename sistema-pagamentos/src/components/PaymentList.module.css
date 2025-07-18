@@ -52,6 +52,7 @@
 .card-approved { border-left-color: var(--color-success); }
 .card-pending { border-left-color: var(--color-warning); }
 .card-rejected { border-left-color: var(--color-danger); }
+.card-settled { border-left-color: #6f42c1; } /* Cor para o novo status */
 
 .cardHeader {
   display: flex;
@@ -76,6 +77,7 @@
 .approved { background-color: var(--color-success); color: white; }
 .pending { background-color: var(--color-warning); color: #1e1e1e; }
 .rejected { background-color: var(--color-danger); color: white; }
+.settled { background-color: #6f42c1; color: white; } /* Cor para o novo status */
 
 .cardBody {
   padding: var(--spacing-3);
@@ -105,8 +107,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  flex-wrap: wrap; /* << 1. PERMITE QUE OS ITENS (ÍCONES E BOTÕES) QUEBREM A LINHA */
-  gap: var(--spacing-3); /* Adiciona um espaço caso quebrem a linha */
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
 }
 .socialIcons { display: flex; gap: var(--spacing-3); }
 .socialIcons a { color: var(--text-secondary); transition: color 0.2s; }
@@ -116,8 +118,8 @@
 .actions {
   display: flex;
   gap: var(--spacing-2);
-  flex-wrap: wrap; /* << 2. PERMITE QUE OS BOTÕES DENTRO DO GRUPO QUEBREM A LINHA */
-  justify-content: flex-end; /* Garante que, se quebrar, eles ainda fiquem à direita */
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .actions button, .actions a {
   padding: var(--spacing-2) var(--spacing-3);
@@ -132,7 +134,6 @@
   gap: var(--spacing-2);
   font-size: 0.9rem;
   transition: opacity 0.2s;
-  /* white-space: nowrap; << 3. REMOVEMOS ESTA LINHA PROBLEMÁTICA */
 }
 .actions button:hover, .actions a:hover {
   opacity: 0.8;
@@ -140,6 +141,7 @@
 .copiarButton { background-color: var(--color-primary); }
 .enviarButton { background-color: var(--color-success); }
 .cobrarButton { background-color: var(--color-orange); }
+.settleButton { background-color: #6f42c1; } /* Cor para o novo botão */
 .deleteButton { background-color: var(--color-danger); }
 .pagination {
   display: flex;
