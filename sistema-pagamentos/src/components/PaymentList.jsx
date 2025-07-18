@@ -1,26 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, where, limit, startAfter, getDocs, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, where, limit, startAfter, getDocs, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import styles from './PaymentList.module.css';
 import DescriptionModal from './DescriptionModal';
 import PaymentDetailsModal from './PaymentDetailsModal';
+import { useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 30;
 
-// ==========================================================
-//  DEFINIÇÃO DOS ÍCONES QUE ESTAVA FALTANDO
-// ==========================================================
-const WhatsAppIcon = () => (
-    <svg viewBox="0 0 32 32" fill="#25D366" xmlns="http://www.w3.org/2000/svg"><path d="M19.11 17.205c-.372 0-1.088 1.39-1.518 1.39a.63.63 0 0 1-.315-.1c-.802-.402-1.504-.817-2.163-1.447-.545-.516-1.146-1.29-1.46-1.963a.426.426 0 0 1-.073-.215c0-.33.99-.945.99-1.49 0-.544-.527-1.146-.527-1.146s-.5-.517-.825-.517c-.325 0-1.012.36-1.49.886-.478.527-1.146 1.49-1.146 2.473s.527 2.104 1.053 2.573c.527.47 2.214 3.32 5.176 4.545 2.16.866 2.972.708 3.638.648.666-.06 2.08-.865 2.39-1.49.31-.625.31-1.21.24-1.355-.07-.145-.315-.22-.63-.38z" fillRule="evenodd"></path></svg>
-);
-
-const InstagramIcon = () => (
-    <svg viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg" fill="url(#gradient-instagram)">
-        <defs><radialGradient id="gradient-instagram" r="150%" cx="30%" cy="107%"><stop stopColor="#fdf497" offset="0"></stop><stop stopColor="#fdf497" offset="0.05"></stop><stop stopColor="#fd5949" offset="0.45"></stop><stop stopColor="#d6249f" offset="0.6"></stop><stop stopColor="#285AEB" offset="0.9"></stop></radialGradient></defs><path d="M 9.9980469 3 C 6.1390469 3 3 6.1419531 3 10.001953 L 3 20.001953 C 3 23.860953 6.1419531 27 10.001953 27 L 20.001953 27 C 23.860953 27 27 23.858047 27 19.998047 L 27 9.9980469 C 27 6.1390469 23.858047 3 19.998047 3 L 9.9980469 3 z M 22 7 C 22.552 7 23 7.448 23 8 C 23 8.552 22.552 9 22 9 C 21.448 9 21 8.552 21 8 C 21 7.448 21.448 7 22 7 z M 15 9 C 18.309 9 21 11.691 21 15 C 21 18.309 18.309 21 15 21 C 11.691 21 9 18.309 9 15 C 9 11.691 11.691 9 15 9 z M 15 11 A 4 4 0 0 0 11 15 A 4 4 0 0 0 15 19 A 4 4 0 0 0 19 15 A 4 4 0 0 0 15 11 z"></path>
-    </svg>
-);
-
+const WhatsAppIcon = () => ( <svg viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px"><path d="M16.6 14c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.6.7-.8.9-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2.1-1.3-.8-.7-1.3-1.6-1.5-1.8-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.3-.4.1-.1.1-.2 0-.4-.1-.1-.6-.7-.8-.9-.2-.2-.4-.3-.5-.3h-.4c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2 1 2.3c.1 0 1.5.7 3.5 2.5 2 1.8 2 1.2 2.4 1.2.5 0 1.5-.7 1.7-1.4.2-.7.2-1.2.1-1.3-.1-.1-.2-.2-.4-.3zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"></path></svg> );
+const InstagramIcon = () => ( <svg viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"></path></svg> );
 
 function PaymentList() {
     const [payments, setPayments] = useState([]);
@@ -29,6 +19,7 @@ function PaymentList() {
     const [hasMore, setHasMore] = useState(true);
     const [filters, setFilters] = useState({ name: '', status: '', startDate: '', endDate: '' });
     const { currentUser } = useAuth();
+    const navigate = useNavigate();
     
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [selectedPayment, setSelectedPayment] = useState(null);
@@ -122,7 +113,7 @@ function PaymentList() {
     };
 
     return (
-        <>
+        <div className={styles.paymentListContainer}>
             <div className={styles.filterBar}>
                 <input type="text" name="name" placeholder="Nome do cliente..." value={filters.name} onChange={handleFilterChange} className={styles.filterInput} />
                 <input type="date" name="startDate" title="Data inicial da live" value={filters.startDate} onChange={handleFilterChange} className={styles.filterInput} />
@@ -134,82 +125,86 @@ function PaymentList() {
                     <option value="rejected">Falhou</option>
                 </select>
             </div>
-            <div className={styles.tableContainer}>
-                <h2>Pagamentos Gerados</h2>
-                <table>
-                    <thead>
-                        <tr><th>Cliente</th><th>Descrição</th><th>Valor</th><th>Data da Live</th><th>Status</th><th>Ações</th></tr>
-                    </thead>
-                    <tbody>
-                        {isLoading && payments.length === 0 ? (
-                            <tr><td colSpan="6" style={{ textAlign: 'center' }}>Carregando...</td></tr>
-                        ) : payments.length === 0 ? (
-                            <tr><td colSpan="6" style={{ textAlign: 'center' }}>Nenhum pagamento encontrado.</td></tr>
-                        ) : (
-                            payments.map((payment) => {
-                                const statusInfo = getStatusInfo(payment.status);
-                                const cleanWhatsapp = payment.whatsapp?.replace(/\D/g, '');
-                                const instagramHandle = payment.instagram?.replace('@', '').trim();
-                                const messageEnvio = encodeURIComponent(`Olá ${payment.clientName}! Segue o link para o seu pagamento: ${payment.paymentLink}`);
-                                const messageCobranca = encodeURIComponent(`Olá ${payment.clientName}, tudo bem? Passando para lembrar sobre o pagamento pendente. Qualquer dúvida, estou à disposição! Link: ${payment.paymentLink}`);
-                                const description = payment.description || '';
-                                const isLongDescription = description.length > 40;
+            <h2>Pagamentos Gerados</h2>
+            {isLoading && payments.length === 0 ? (
+                <p>Carregando...</p>
+            ) : payments.length === 0 ? (
+                <p>Nenhum pagamento encontrado.</p>
+            ) : (
+                <div className={styles.cardsGrid}>
+                {payments.map((payment) => {
+                    const statusInfo = getStatusInfo(payment.status);
+                    const cleanWhatsapp = payment.whatsapp?.replace(/\D/g, '');
+                    const instagramHandle = payment.instagram?.replace('@', '').trim();
+                    const messageEnvio = encodeURIComponent(`Olá ${payment.clientName}! Segue o link para o seu pagamento: ${payment.paymentLink}`);
+                    const messageCobranca = encodeURIComponent(`Olá ${payment.clientName}, tudo bem? Passando para lembrar sobre o pagamento pendente. Qualquer dúvida, estou à disposição! Link: ${payment.paymentLink}`);
+                    const description = payment.description || '';
+                    const isLongDescription = description.length > 80;
 
-                                return (
-                                    <tr key={payment.id} onClick={() => handleShowDetails(payment)} className={styles.clickableRow}>
-                                        <td data-label="Cliente">
-                                            <div className={styles.clientCell}>
-                                                <span>{payment.clientName || 'N/A'}</span>
-                                                <div className={styles.socialIcons}>
-                                                    {cleanWhatsapp && (
-                                                        <a href={`https://wa.me/55${cleanWhatsapp}`} target="_blank" rel="noopener noreferrer" title={payment.whatsapp} onClick={(e) => e.stopPropagation()}>
-                                                            <WhatsAppIcon />
-                                                        </a>
-                                                    )}
-                                                    {instagramHandle && (
-                                                        <a href={`https://ig.me/m/${instagramHandle}`} target="_blank" rel="noopener noreferrer" title={`@${instagramHandle}`} onClick={(e) => e.stopPropagation()}>
-                                                            <InstagramIcon />
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td data-label="Descrição" title={description}>
-                                            <div className={styles.descriptionContent}>
-                                                <span className={styles.descriptionText}>{isLongDescription ? `${description.substring(0, 40)}...` : description}</span>
-                                                {isLongDescription && ( <button onClick={(e) => { e.stopPropagation(); handleShowDescription(description); }} className={styles.verMaisButton}>(Ver mais)</button> )}
-                                            </div>
-                                        </td>
-                                        <td data-label="Valor">{formatCurrency(payment.value)}</td>
-                                        <td data-label="Data da Live">{formatDateToDDMMYYYY(payment.liveDate)}</td>
-                                        <td data-label="Status"><span className={`${styles.status} ${statusInfo.className}`}>{statusInfo.text}</span></td>
-                                        <td data-label="Ações" className={styles.actions} onClick={(e) => e.stopPropagation()}>
-                                            <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(payment.paymentLink); alert('Link copiado!'); }} className={styles.copiarButton} title="Copiar Link">Copiar</button>
-                                            {cleanWhatsapp && payment.paymentLink && (
-                                                <>
-                                                    <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" className={styles.enviarButton} title="Enviar Link">Enviar</a>
-                                                    <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" className={styles.cobrarButton} title="Cobrar">Cobrar</a>
-                                                </>
-                                            )}
-                                            <button onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }} className={styles.deleteButton} title="Excluir">Excluir</button>
-                                        </td>
-                                    </tr>
-                                );
-                            })
-                        )}
-                    </tbody>
-                </table>
-                {!isLoading && hasMore && (
-                    <div className={styles.pagination}>
-                        <button onClick={loadMore} disabled={isLoading}>
-                            {isLoading ? 'Carregando...' : 'Carregar Mais'}
-                        </button>
+                    return (
+                    <div key={payment.id} className={`${styles.paymentCard} ${styles[`card-${payment.status}`]}`}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.clientInfo} onClick={(e) => { e.stopPropagation(); if(payment.clientId) navigate(`/clientes/${payment.clientId}`) }}>
+                                <strong>{payment.clientName || 'N/A'}</strong>
+                            </div>
+                            <span className={`${styles.status} ${statusInfo.className}`}>
+                                {statusInfo.text}
+                            </span>
+                        </div>
+
+                        <div className={styles.cardBody} onClick={() => handleShowDetails(payment)}>
+                            <div className={styles.detailRow}>
+                                <span>Valor:</span>
+                                <span>{formatCurrency(payment.value)}</span>
+                            </div>
+                            <div className={styles.detailRow}>
+                                <span>Data da Live:</span>
+                                <span>{formatDateToDDMMYYYY(payment.liveDate)}</span>
+                            </div>
+                            <div className={styles.description} title={description}>
+                                <span>Descrição:</span>
+                                <p>
+                                    {isLongDescription ? `${description.substring(0, 80)}...` : description}
+                                    {isLongDescription && ( <button onClick={(e) => { e.stopPropagation(); handleShowDescription(description); }} className={styles.verMaisButton}>(Ver mais)</button> )}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className={styles.cardFooter}>
+                            <div className={styles.socialIcons}>
+                                {cleanWhatsapp && (
+                                    <a href={`https://wa.me/55${cleanWhatsapp}`} target="_blank" rel="noopener noreferrer" title="WhatsApp" onClick={(e) => e.stopPropagation()}><WhatsAppIcon /></a>
+                                )}
+                                {instagramHandle && (
+                                    <a href={`https://ig.me/m/${instagramHandle}`} target="_blank" rel="noopener noreferrer" title={`@${instagramHandle}`} onClick={(e) => e.stopPropagation()}><InstagramIcon /></a>
+                                )}
+                            </div>
+                            <div className={styles.actions}>
+                                <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(payment.paymentLink); alert('Link copiado!'); }} className={styles.copiarButton}>Copiar</button>
+                                {cleanWhatsapp && payment.paymentLink && (
+                                    <>
+                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" className={styles.enviarButton}>Enviar</a>
+                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" className={styles.cobrarButton}>Cobrar</a>
+                                    </>
+                                )}
+                                <button onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }} className={styles.deleteButton}>Excluir</button>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
+                    );
+                })}
+                </div>
+            )}
+            {!isLoading && hasMore && (
+                <div className={styles.pagination}>
+                    <button onClick={loadMore} disabled={isLoading}>
+                        {isLoading ? 'Carregando...' : 'Carregar Mais'}
+                    </button>
+                </div>
+            )}
             <DescriptionModal isOpen={isDescModalOpen} onClose={() => setIsDescModalOpen(false)} description={selectedDescription} />
             <PaymentDetailsModal isOpen={isDetailsModalOpen} onClose={() => setIsDetailsModalOpen(false)} payment={selectedPayment} />
-        </>
+        </div>
     );
 }
 

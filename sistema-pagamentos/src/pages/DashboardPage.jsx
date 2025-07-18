@@ -17,7 +17,7 @@ function DashboardPage() {
   return (
     <div className={styles.dashboardPage}>
       <header className={styles.header}>
-        <h2>Painel de Controle</h2>
+       
         <button onClick={() => setIsModalOpen(true)} className={styles.addButton}>
           Gerar Novo Pagamento
         </button>

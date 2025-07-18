@@ -117,7 +117,7 @@ function ClientsPage() {
   return (
     <div className={styles.clientsPage}>
       <header className={styles.header}>
-        <h1>Meus Clientes</h1>
+        <h1>Clientes</h1>
         <button onClick={handleAddNewClient} className={styles.addButton}>Novo Cliente</button>
       </header>
       

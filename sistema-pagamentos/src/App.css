@@ -1,18 +1,23 @@
+/* src/App.css */
+
 .app-container {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  width: 100%;
-  background-color: #242424;
-  color: rgba(255, 255, 255, 0.87);
   min-height: 100vh;
+  background-color: var(--background-primary);
 }
 
 .content-wrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: 100%;
-  padding: 2rem;
-  box-sizing: border-box;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: var(--spacing-5); /* Espaçamento padrão para telas grandes */
+  flex-grow: 1;
+}
+
+/* Media query para telas menores (celulares) */
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding: var(--spacing-3); /* Diminui o espaçamento em telas menores */
+  }
 }

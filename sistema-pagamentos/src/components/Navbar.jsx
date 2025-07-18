@@ -24,7 +24,7 @@ function Navbar() {
     <nav className={styles.navbar}>
       <div className={styles.navContainer}>
         <NavLink to="/" className={styles.navLogo}>
-          Painel de Pagamentos
+          MP
         </NavLink>
         <ul className={styles.navMenu}>
           {/* Mostra os links do painel apenas se o usuário estiver logado */}
