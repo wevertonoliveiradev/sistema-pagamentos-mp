@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, orderBy, where } from 'firebase/firestore';
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, orderBy, where, limit, startAfter, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
 import ClientFormModal from '../components/ClientFormModal';
 import styles from './ClientsPage.module.css';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+
+const PAGE_SIZE = 30; // Define o número de clientes por página
 
 function ClientsPage() {
   const [clients, setClients] = useState([]);
@@ -13,6 +15,10 @@ function ClientsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState(null);
+
+  // Novos estados para a paginação
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
 
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -25,11 +31,18 @@ function ClientsPage() {
     }
     
     setIsLoading(true);
-    const q = query(collection(db, 'clients'), where("userId", "==", currentUser.uid), orderBy('name'));
+    const q = query(
+      collection(db, 'clients'), 
+      where("userId", "==", currentUser.uid),
+      orderBy('name'),
+      limit(PAGE_SIZE) // Limita a busca inicial à primeira página
+    );
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
       const clientsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setClients(clientsData);
+      setLastDoc(querySnapshot.docs[querySnapshot.docs.length - 1]); // Guarda o último item para a próxima busca
+      setHasMore(clientsData.length === PAGE_SIZE); // Verifica se há mais páginas
       setIsLoading(false);
     }, (error) => {
         console.error("Erro ao buscar clientes:", error);
@@ -41,11 +54,33 @@ function ClientsPage() {
   }, [currentUser]);
 
   useEffect(() => {
+    // A busca por texto filtra apenas os clientes já carregados
     const results = clients.filter(client =>
       client.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredClients(results);
   }, [searchTerm, clients]);
+  
+  // Nova função para carregar mais clientes
+  const loadMore = async () => {
+    if (!currentUser || !lastDoc) return;
+
+    setIsLoading(true);
+    const q = query(
+      collection(db, 'clients'),
+      where("userId", "==", currentUser.uid),
+      orderBy('name'),
+      startAfter(lastDoc), // Começa a busca depois do último item carregado
+      limit(PAGE_SIZE)
+    );
+
+    const documentSnapshots = await getDocs(q);
+    const newClients = documentSnapshots.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    setClients(prev => [...prev, ...newClients]); // Adiciona os novos clientes à lista existente
+    setLastDoc(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+    setHasMore(newClients.length === PAGE_SIZE);
+    setIsLoading(false);
+  };
 
   const getCleanInstagramHandle = (input) => {
     if (!input) return '';
@@ -117,7 +152,7 @@ function ClientsPage() {
   return (
     <div className={styles.clientsPage}>
       <header className={styles.header}>
-        <h1>Clientes</h1>
+        <h1>Meus Clientes</h1>
         <button onClick={handleAddNewClient} className={styles.addButton}>Novo Cliente</button>
       </header>
       
@@ -142,7 +177,7 @@ function ClientsPage() {
                 </tr>
             </thead>
             <tbody>
-                {isLoading ? (
+                {isLoading && clients.length === 0 ? (
                     <tr><td colSpan="4" style={{ textAlign: 'center' }}>Carregando...</td></tr>
                 ) : filteredClients.length === 0 ? (
                     <tr><td colSpan="4" style={{ textAlign: 'center' }}>Nenhum cliente encontrado.</td></tr>
@@ -179,6 +214,14 @@ function ClientsPage() {
             </tbody>
         </table>
       </div>
+
+      {!isLoading && hasMore && (
+        <div className={styles.pagination}>
+            <button onClick={loadMore} disabled={isLoading}>
+                {isLoading ? 'Carregando...' : 'Carregar Mais'}
+            </button>
+        </div>
+      )}
 
       <ClientFormModal
         isOpen={isModalOpen}

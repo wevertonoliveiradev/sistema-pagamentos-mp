@@ -1,55 +1,57 @@
-// src/components/PaymentModal.jsx
-
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
+import { useAuth } from '../context/AuthContext';
 import styles from './PaymentModal.module.css';
 
 function PaymentModal({ isOpen, onClose }) {
-  // Estados do formulário
+  const { currentUser } = useAuth();
+
   const [selectedClient, setSelectedClient] = useState(null);
   const [value, setValue] = useState('');
   const [description, setDescription] = useState('');
   const [liveDate, setLiveDate] = useState('');
-
-  // Estados da busca de cliente
   const [clientSearch, setClientSearch] = useState('');
   const [clientsFound, setClientsFound] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-
-  // Estados de controle
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Efeito para buscar clientes enquanto o usuário digita
   useEffect(() => {
-    // Não busca se o campo estiver vazio ou um cliente já foi selecionado
-    if (!clientSearch || selectedClient) {
+    if (!clientSearch || selectedClient || !currentUser) {
       setClientsFound([]);
       return;
     }
 
     setIsSearching(true);
-    // Um pequeno delay (debounce) para não fazer buscas a cada letra digitada
     const searchTimeout = setTimeout(async () => {
-      const searchTerm = clientSearch.toLowerCase();
-      const q = query(
-        collection(db, 'clients'),
-        where('name_lowercase', '>=', searchTerm),
-        where('name_lowercase', '<=', searchTerm + '\uf8ff')
-      );
-      
-      const querySnapshot = await getDocs(q);
-      const found = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setClientsFound(found);
-      setIsSearching(false);
-    }, 500); // 500ms de espera
+      try {
+        const searchTerm = clientSearch.toLowerCase();
+        const q = query(
+          collection(db, 'clients'),
+          where('userId', '==', currentUser.uid),
+          where('name_lowercase', '>=', searchTerm),
+          where('name_lowercase', '<=', searchTerm + '\uf8ff'),
+          limit(10)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        const found = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setClientsFound(found);
+      } catch (err) {
+        // AQUI ESTÁ A MELHORIA: Capturamos o erro e informamos o usuário.
+        console.error("Erro ao buscar cliente (provavelmente falta um índice):", err);
+        setError("Erro ao buscar clientes. Verifique o console para criar o índice.");
+      } finally {
+        // Garante que a mensagem "Buscando..." sempre desapareça.
+        setIsSearching(false);
+      }
+    }, 500);
 
     return () => clearTimeout(searchTimeout);
-  }, [clientSearch, selectedClient]);
+  }, [clientSearch, selectedClient, currentUser]);
 
-  // Função para limpar e fechar o modal
   const handleClose = () => {
     setSelectedClient(null);
     setClientSearch('');
@@ -60,7 +62,6 @@ function PaymentModal({ isOpen, onClose }) {
     onClose();
   };
 
-  // Função para submeter o formulário
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedClient) {
@@ -79,7 +80,7 @@ function PaymentModal({ isOpen, onClose }) {
         liveDate,
       });
       alert('Link de pagamento gerado com sucesso!');
-      handleClose(); // Fecha e limpa o modal
+      handleClose();
     } catch (err) {
       console.error("Erro ao gerar pagamento:", err);
       setError(err.message || 'Falha ao gerar o link.');
@@ -88,9 +89,6 @@ function PaymentModal({ isOpen, onClose }) {
     }
   };
 
-  // Adiciona um campo 'name_lowercase' ao salvar clientes para a busca funcionar
-  // (Esta é uma melhoria para fazer na ClientFormModal depois)
-
   if (!isOpen) return null;
 
   return (
@@ -98,7 +96,6 @@ function PaymentModal({ isOpen, onClose }) {
       <div className={styles.modalContent}>
         <h2>Gerar Novo Pagamento</h2>
         <form onSubmit={handleSubmit}>
-          {/* Seção de busca de cliente */}
           <div className={styles.formGroup}>
             <label htmlFor="clientSearch">Buscar Cliente</label>
             {!selectedClient ? (
@@ -109,12 +106,17 @@ function PaymentModal({ isOpen, onClose }) {
                   placeholder="Digite o nome do cliente..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
+                  autoComplete="off"
                 />
-                {isSearching && <p>Buscando...</p>}
+                {isSearching && <p className={styles.searchingText}>Buscando...</p>}
                 {clientsFound.length > 0 && (
                   <ul className={styles.searchResults}>
                     {clientsFound.map(client => (
-                      <li key={client.id} onClick={() => setSelectedClient(client)}>
+                      <li key={client.id} onClick={() => {
+                        setSelectedClient(client);
+                        setClientSearch(client.name);
+                        setClientsFound([]);
+                      }}>
                         {client.name}
                       </li>
                     ))}
@@ -131,7 +133,6 @@ function PaymentModal({ isOpen, onClose }) {
             )}
           </div>
           
-          {/* Outros campos do formulário */}
           <div className={styles.formGroup}>
             <label htmlFor="value">Valor (R$)</label>
             <input type="number" id="value" value={value} onChange={(e) => setValue(e.target.value)} required />
@@ -149,7 +150,7 @@ function PaymentModal({ isOpen, onClose }) {
 
           <div className={styles.buttonGroup}>
             <button type="button" onClick={handleClose} className={styles.cancelButton}>Cancelar</button>
-            <button type="submit" className={styles.saveButton} disabled={isLoading}>
+            <button type="submit" className={styles.saveButton} disabled={isLoading || !selectedClient}>
               {isLoading ? 'Gerando...' : 'Gerar Pagamento'}
             </button>
           </div>
