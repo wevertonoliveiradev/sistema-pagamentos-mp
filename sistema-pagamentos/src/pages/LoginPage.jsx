@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
+// 1. Importa as funções de persistência do Firebase Auth
+import { getAuth, setPersistence, signInWithEmailAndPassword, browserLocalPersistence } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthForm from '../components/AuthForm';
 import styles from './AuthPages.module.css';
@@ -13,14 +14,20 @@ function LoginPage() {
   const handleLogin = (email, password) => {
     setIsLoading(true);
     setError('');
-    signInWithEmailAndPassword(auth, email, password)
+
+    // 2. Define a persistência como LOCAL (guarda no navegador mesmo se fechar)
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        // 3. Após definir a persistência, tenta fazer o login
+        return signInWithEmailAndPassword(auth, email, password);
+      })
       .then((userCredential) => {
         // Login bem-sucedido, redireciona para o painel
         navigate('/');
       })
       .catch((error) => {
         setError('Email ou senha inválidos.');
-        console.error(error);
+        console.error("Erro de login:", error);
       })
       .finally(() => {
         setIsLoading(false);

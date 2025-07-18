@@ -2,8 +2,8 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import './App.css'; 
 
-import Navbar from './components/Navbar';
-import ProtectedRoute from './components/ProtectedRoute'; // 1. Importa nosso "porteiro"
+import ProtectedRoute from './components/ProtectedRoute';
+import MainLayout from './components/MainLayout';
 import DashboardPage from './pages/DashboardPage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
@@ -13,42 +13,29 @@ import SignupPage from './pages/SignupPage';
 function App() {
   return (
     <BrowserRouter>
-      <div className="app-container">
-        <Navbar />
-        <main className="content-wrapper">
-          <Routes>
-            {/* Rotas Públicas */}
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+      <Routes>
+        {/* Rotas Públicas (continuam as mesmas, fora do layout principal) */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
 
-            {/* Rotas Protegidas */}
-            <Route 
-              path="/" 
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/clientes" 
-              element={
-                <ProtectedRoute>
-                  <ClientsPage />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/clientes/:clientId" 
-              element={
-                <ProtectedRoute>
-                  <ClientDetailPage />
-                </ProtectedRoute>
-              } 
-            />
-          </Routes>
-        </main>
-      </div>
+        {/* --- ESTRUTURA CORRIGIDA PARA ROTAS PROTEGIDAS --- */}
+        {/* 1. Criamos uma rota "pai" que renderiza nosso layout protegido */}
+        <Route 
+          path="/" 
+          element={
+            <ProtectedRoute>
+              <MainLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* 2. A rota 'index' é a página padrão para o caminho "/" */}
+          <Route index element={<DashboardPage />} />
+          
+          {/* 3. As outras rotas são "filhas" e seus caminhos são relativos ao pai */}
+          <Route path="clientes" element={<ClientsPage />} />
+          <Route path="clientes/:clientId" element={<ClientDetailPage />} />
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }

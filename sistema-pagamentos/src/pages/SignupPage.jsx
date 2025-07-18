@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+// 1. Importa as funções de persistência aqui também
+import { getAuth, setPersistence, createUserWithEmailAndPassword, browserLocalPersistence } from 'firebase/auth';
 import { useNavigate, Link } from 'react-router-dom';
 import AuthForm from '../components/AuthForm';
 import styles from './AuthPages.module.css';
@@ -13,7 +14,13 @@ function SignupPage() {
   const handleSignup = (email, password) => {
     setIsLoading(true);
     setError('');
-    createUserWithEmailAndPassword(auth, email, password)
+    
+    // 2. Define a persistência antes de criar o usuário
+    setPersistence(auth, browserLocalPersistence)
+      .then(() => {
+        // 3. Após definir, tenta criar o novo usuário
+        return createUserWithEmailAndPassword(auth, email, password);
+      })
       .then((userCredential) => {
         // Cadastro e login bem-sucedidos, redireciona para o painel
         navigate('/');
@@ -24,7 +31,7 @@ function SignupPage() {
         } else {
           setError('Falha ao criar a conta. A senha deve ter no mínimo 6 caracteres.');
         }
-        console.error(error);
+        console.error("Erro de cadastro:", error);
       })
       .finally(() => {
         setIsLoading(false);
