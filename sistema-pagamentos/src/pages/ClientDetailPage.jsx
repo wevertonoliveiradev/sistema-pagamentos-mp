@@ -30,9 +30,10 @@ function ClientDetailPage() {
           orderBy('createdAt', 'desc')
         );
         const paymentsSnap = await getDocs(paymentsQuery);
-        const paymentsData = paymentsSnap.docs.map(doc => doc.data());
+        const paymentsData = paymentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setPayments(paymentsData);
 
+        // O cálculo de saldo já ignora 'cancelled', então não precisa de alteração.
         const approvedTotal = paymentsData
           .filter(p => p.status === 'approved' || p.status === 'settled')
           .reduce((sum, p) => sum + p.value, 0);
@@ -52,21 +53,27 @@ function ClientDetailPage() {
     fetchData();
   }, [clientId]);
 
-  // 1. ADICIONA A FUNÇÃO getStatusInfo
+  // Função getStatusInfo ATUALIZADA
   const getStatusInfo = (status) => {
     switch (status) {
         case 'approved': return { text: 'Aprovado', className: styles.approved };
         case 'pending': return { text: 'Pendente', className: styles.pending };
-        case 'rejected': case 'failure': case 'cancelled': return { text: 'Falhou', className: styles.rejected };
+        case 'rejected': case 'failure': return { text: 'Falhou', className: styles.rejected };
         case 'settled': return { text: 'Baixado', className: styles.settled };
+        case 'cancelled': return { text: 'Cancelado', className: styles.cancelled }; // <-- LINHA ADICIONADA
         default: return { text: status || 'N/A', className: '' };
     }
   };
 
-  const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const formatCurrency = (value) => {
+      if (typeof value !== 'number') return 'R$ 0,00';
+      return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  };
+  
   const formatDateToDDMMYYYY = (dateStr) => {
     if (!dateStr) return 'N/A';
     const [year, month, day] = dateStr.split('-');
+    if(!day || !month || !year) return dateStr;
     return `${day}/${month}/${year}`;
   };
 
@@ -119,36 +126,39 @@ function ClientDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {payments.map((payment, index) => {
-                const description = payment.description || '';
-                const isLongDescription = description.length > 50;
-                const statusInfo = getStatusInfo(payment.status); // 2. Usa a função para pegar texto e estilo
+                {payments.length === 0 ? (
+                    <tr><td colSpan="4" style={{textAlign: 'center'}}>Nenhum pagamento encontrado para este cliente.</td></tr>
+                ) : (
+                    payments.map((payment, index) => {
+                        const description = payment.description || '';
+                        const isLongDescription = description.length > 50;
+                        const statusInfo = getStatusInfo(payment.status);
 
-                return (
-                  <tr key={index}>
-                    <td>{formatDateToDDMMYYYY(payment.liveDate)}</td>
-                    <td title={description}>
-                      <div className={styles.descriptionContent}>
-                        <span className={styles.descriptionText}>
-                          {isLongDescription ? `${description.substring(0, 50)}...` : description}
-                        </span>
-                        {isLongDescription && (
-                          <button onClick={() => handleShowDescription(description)} className={styles.verMaisButton}>
-                            (Ver mais)
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                    <td>{formatCurrency(payment.value)}</td>
-                    {/* 3. ATUALIZA A CÉLULA DE STATUS */}
-                    <td>
-                      <span className={`${styles.status} ${statusInfo.className}`}>
-                        {statusInfo.text}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+                        return (
+                        <tr key={payment.id || index}>
+                            <td>{formatDateToDDMMYYYY(payment.liveDate)}</td>
+                            <td title={description}>
+                            <div className={styles.descriptionContent}>
+                                <span className={styles.descriptionText}>
+                                {isLongDescription ? `${description.substring(0, 50)}...` : description}
+                                </span>
+                                {isLongDescription && (
+                                <button onClick={() => handleShowDescription(description)} className={styles.verMaisButton}>
+                                    (Ver mais)
+                                </button>
+                                )}
+                            </div>
+                            </td>
+                            <td>{formatCurrency(payment.value)}</td>
+                            <td>
+                                <span className={`${styles.status} ${statusInfo.className}`}>
+                                    {statusInfo.text}
+                                </span>
+                            </td>
+                        </tr>
+                        );
+                    })
+                )}
             </tbody>
           </table>
         </div>

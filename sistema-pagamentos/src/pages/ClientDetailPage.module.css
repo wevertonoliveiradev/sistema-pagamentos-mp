@@ -111,3 +111,4 @@
 .pending { background-color: var(--color-warning); color: #1e1e1e; }
 .rejected { background-color: var(--color-danger); color: white; }
 .settled { background-color: #6f42c1; color: white; }
+.cancelled { background-color: #6c757d; color: white; }
