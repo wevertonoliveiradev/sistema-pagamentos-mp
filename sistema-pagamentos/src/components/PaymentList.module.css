@@ -157,3 +157,14 @@
   background-color: var(--background-tertiary);
   cursor: not-allowed;
 }
+
+/* === NOVO ESTILO ADICIONADO === */
+/* Estilo para botões que já foram utilizados */
+.actionUsed {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.actionUsed:hover {
+  opacity: 0.6; /* Impede que o hover clareie o botão novamente */
+}

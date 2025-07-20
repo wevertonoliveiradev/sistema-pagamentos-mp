@@ -1,3 +1,5 @@
+/* src/components/PaymentModal.module.css - ATUALIZADO */
+
 .modalOverlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
@@ -15,23 +17,49 @@
 }
 .buttonGroup { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem; }
 .buttonGroup button { padding: 0.6rem 1.2rem; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; }
-.saveButton { background-color: #007bff; color: white; }
+.saveButton { background-color: var(--color-primary); color: white; }
 .cancelButton { background-color: #6c757d; color: white; }
 .errorText { color: #f44336; margin-top: 1rem; text-align: center; }
+.searchingText {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  padding: var(--spacing-2) 0;
+}
 
-/* Estilos da busca de cliente */
+/* --- ESTILOS ATUALIZADOS PARA A BUSCA DE CLIENTE --- */
 .searchResults {
   list-style: none; padding: 0; margin: 0;
   position: absolute; width: 100%; background-color: #3f3f3f;
   border: 1px solid #555; border-top: none; border-radius: 0 0 4px 4px;
-  max-height: 150px; overflow-y: auto; z-index: 1001;
+  max-height: 200px; overflow-y: auto; z-index: 1001;
 }
 .searchResults li {
-  padding: 0.75rem; cursor: pointer;
+  padding: var(--spacing-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-color);
+}
+.searchResults li:last-child {
+  border-bottom: none;
 }
 .searchResults li:hover {
   background-color: #555;
 }
+
+/* NOVO ESTILO para exibir os detalhes do cliente no resultado */
+.searchResultItem {
+  display: flex;
+  flex-direction: column;
+}
+.searchResultItem strong {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-1);
+}
+.searchResultItem span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+/* --- FIM DOS ESTILOS ATUALIZADOS --- */
+
 .selectedClient {
   display: flex; justify-content: space-between; align-items: center;
   background-color: #3f3f3f; padding: 0.75rem; border-radius: 4px;

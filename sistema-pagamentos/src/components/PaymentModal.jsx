@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, getDocs, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
 import { db, functions } from '../firebase';
 import { httpsCallable } from 'firebase/functions';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +18,7 @@ function PaymentModal({ isOpen, onClose }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // --- LÓGICA DE BUSCA ATUALIZADA ---
   useEffect(() => {
     if (!clientSearch || selectedClient || !currentUser) {
       setClientsFound([]);
@@ -28,23 +29,49 @@ function PaymentModal({ isOpen, onClose }) {
     const searchTimeout = setTimeout(async () => {
       try {
         const searchTerm = clientSearch.toLowerCase();
-        const q = query(
+        
+        // 1. Cria três consultas separadas
+        const nameQuery = query(
           collection(db, 'clients'),
           where('userId', '==', currentUser.uid),
           where('name_lowercase', '>=', searchTerm),
           where('name_lowercase', '<=', searchTerm + '\uf8ff'),
-          limit(10)
+          limit(5)
         );
-        
-        const querySnapshot = await getDocs(q);
-        const found = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setClientsFound(found);
+        const whatsappQuery = query(
+          collection(db, 'clients'),
+          where('userId', '==', currentUser.uid),
+          where('whatsapp', '>=', clientSearch), // Busca por telefone não precisa ser lowercase
+          where('whatsapp', '<=', clientSearch + '\uf8ff'),
+          limit(5)
+        );
+        const instagramQuery = query(
+          collection(db, 'clients'),
+          where('userId', '==', currentUser.uid),
+          where('instagram', '>=', clientSearch),
+          where('instagram', '<=', clientSearch + '\uf8ff'),
+          limit(5)
+        );
+
+        // 2. Executa todas as buscas em paralelo
+        const [nameResults, whatsappResults, instagramResults] = await Promise.all([
+          getDocs(nameQuery),
+          getDocs(whatsappQuery),
+          getDocs(instagramQuery),
+        ]);
+
+        // 3. Junta e remove duplicados
+        const allResults = new Map();
+        nameResults.docs.forEach(doc => allResults.set(doc.id, { id: doc.id, ...doc.data() }));
+        whatsappResults.docs.forEach(doc => allResults.set(doc.id, { id: doc.id, ...doc.data() }));
+        instagramResults.docs.forEach(doc => allResults.set(doc.id, { id: doc.id, ...doc.data() }));
+
+        setClientsFound(Array.from(allResults.values()));
+
       } catch (err) {
-        // AQUI ESTÁ A MELHORIA: Capturamos o erro e informamos o usuário.
-        console.error("Erro ao buscar cliente (provavelmente falta um índice):", err);
-        setError("Erro ao buscar clientes. Verifique o console para criar o índice.");
+        console.error("Erro ao buscar cliente:", err);
+        setError("Erro ao buscar clientes. Verifique o console para criar os índices necessários.");
       } finally {
-        // Garante que a mensagem "Buscando..." sempre desapareça.
         setIsSearching(false);
       }
     }, 500);
@@ -97,13 +124,13 @@ function PaymentModal({ isOpen, onClose }) {
         <h2>Gerar Novo Pagamento</h2>
         <form onSubmit={handleSubmit}>
           <div className={styles.formGroup}>
-            <label htmlFor="clientSearch">Buscar Cliente</label>
+            <label htmlFor="clientSearch">Buscar Cliente (Nome, WhatsApp ou Instagram)</label>
             {!selectedClient ? (
               <>
                 <input
                   type="text"
                   id="clientSearch"
-                  placeholder="Digite o nome do cliente..."
+                  placeholder="Digite para buscar..."
                   value={clientSearch}
                   onChange={(e) => setClientSearch(e.target.value)}
                   autoComplete="off"
@@ -117,7 +144,12 @@ function PaymentModal({ isOpen, onClose }) {
                         setClientSearch(client.name);
                         setClientsFound([]);
                       }}>
-                        {client.name}
+                        {/* RESULTADO DA BUSCA ATUALIZADO */}
+                        <div className={styles.searchResultItem}>
+                          <strong>{client.name}</strong>
+                          <span>{client.whatsapp}</span>
+                          <span>{client.instagram}</span>
+                        </div>
                       </li>
                     ))}
                   </ul>

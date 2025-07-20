@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { collection, query, orderBy, where, limit, startAfter, getDocs, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, where, limit, startAfter, getDocs, onSnapshot, deleteDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import styles from './PaymentList.module.css';
@@ -9,7 +9,6 @@ import { useNavigate } from 'react-router-dom';
 
 const PAGE_SIZE = 30;
 
-// --- Componentes de Ícone (SVG) ---
 const WhatsAppIcon = () => ( <svg viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px"><path d="M16.6 14c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1-.2.2-.6.7-.8.9-.1.1-.3.2-.5.1-.3-.1-1.1-.4-2.1-1.3-.8-.7-1.3-1.6-1.5-1.8-.1-.2 0-.4.1-.5l.4-.5c.1-.1.2-.3.3-.4.1-.1.1-.2 0-.4-.1-.1-.6-.7-.8-.9-.2-.2-.4-.3-.5-.3h-.4c-.2 0-.4.1-.6.3-.2.2-.8.8-.8 1.9s.8 2.2 1 2.3c.1 0 1.5.7 3.5 2.5 2 1.8 2 1.2 2.4 1.2.5 0 1.5-.7 1.7-1.4.2-.7.2-1.2.1-1.3-.1-.1-.2-.2-.4-.3zM12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"></path></svg> );
 const InstagramIcon = () => ( <svg viewBox="0 0 24 24" fill="currentColor" width="20px" height="20px"><path d="M7.8,2H16.2C19.4,2 22,4.6 22,7.8V16.2A5.8,5.8 0 0,1 16.2,22H7.8C4.6,22 2,19.4 2,16.2V7.8A5.8,5.8 0 0,1 7.8,2M7.6,4A3.6,3.6 0 0,0 4,7.6V16.4C4,18.39 5.61,20 7.6,20H16.4A3.6,3.6 0 0,0 20,16.4V7.6C20,5.61 18.39,4 16.4,4H7.6M17.25,5.5A1.25,1.25 0 0,1 18.5,6.75A1.25,1.25 0 0,1 17.25,8A1.25,1.25 0 0,1 16,6.75A1.25,1.25 0 0,1 17.25,5.5M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z"></path></svg> );
 
@@ -31,70 +30,78 @@ function PaymentList() {
         switch (status) {
             case 'approved': return { text: 'Aprovado', className: styles.approved };
             case 'pending': return { text: 'Pendente', className: styles.pending };
-            case 'rejected': case 'failure': return { text: 'Falhou', className: styles.rejected };
+            case 'rejected': case 'failure': case 'cancelled': return { text: 'Falhou', className: styles.rejected };
             case 'settled': return { text: 'Baixado', className: styles.settled };
             case 'cancelled': return { text: 'Cancelado', className: styles.cancelled };
             default: return { text: status || 'N/A', className: '' };
         }
     };
-
     const formatCurrency = (value) => {
         if (typeof value !== 'number') return 'R$ 0,00';
         return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
-
     const formatDateToDDMMYYYY = (dateStr) => {
         if (!dateStr) return 'N/A';
         const [year, month, day] = dateStr.split('-');
         if (!day || !month || !year) return dateStr;
         return `${day}/${month}/${year}`;
     };
-
     const handleSettlePayment = async (paymentId) => {
         const confirmationMessage = "Tem certeza que deseja baixar este pagamento?\n\nEsta ação é para pagamentos recebidos fora do sistema (ex: PIX, dinheiro) e não pode ser desfeita.";
         if (window.confirm(confirmationMessage)) {
             try {
                 const paymentRef = doc(db, 'payments', paymentId);
                 await updateDoc(paymentRef, { status: 'settled' });
-            } catch (error) {
-                console.error("Erro ao baixar pagamento: ", error);
-                alert('Ocorreu um erro ao tentar baixar o pagamento.');
-            }
+            } catch (error) { console.error("Erro ao baixar pagamento: ", error); }
         }
     };
-
     const handleCancelPayment = async (paymentId) => {
         if (window.confirm('Tem certeza que deseja cancelar este pagamento? O valor não será contabilizado.')) {
             try {
                 const paymentRef = doc(db, 'payments', paymentId);
                 await updateDoc(paymentRef, { status: 'cancelled' });
-            } catch (error) {
-                console.error("Erro ao cancelar pagamento: ", error);
-                alert('Ocorreu um erro ao tentar cancelar o pagamento.');
-            }
+            } catch (error) { console.error("Erro ao cancelar pagamento: ", error); }
         }
     };
-
     const handleDeletePayment = async (paymentId) => {
         if (window.confirm('Tem certeza que deseja excluir este pagamento? Esta ação é irreversível.')) {
             try { await deleteDoc(doc(db, 'payments', paymentId)); } 
             catch (error) { console.error("Erro ao excluir pagamento:", error); }
         }
     };
-
     const handleShowDescription = (description) => {
         setSelectedDescription(description);
         setIsDescModalOpen(true);
     };
-
     const handleShowDetails = (payment) => {
         setSelectedPayment(payment);
         setIsDetailsModalOpen(true);
     };
-
     const handleFilterChange = (e) => {
         const { name, value } = e.target;
         setFilters(prev => ({ ...prev, [name]: value }));
+    };
+
+    // NOVA FUNÇÃO para marcar a ação como feita
+    const handleMarkAsAction = async (e, paymentId, actionType) => {
+        e.stopPropagation();
+        
+        const fieldToUpdate = actionType === 'linkSent' ? 'linkSentAt' : 'chargeSentAt';
+
+        try {
+            const paymentRef = doc(db, 'payments', paymentId);
+            await updateDoc(paymentRef, {
+                [fieldToUpdate]: serverTimestamp()
+            });
+        } catch (error) {
+            console.error("Erro ao marcar ação: ", error);
+        }
+    };
+    
+    // NOVA FUNÇÃO para formatar a data e hora
+    const formatTimestamp = (timestamp) => {
+        if (!timestamp?.toDate) return '';
+        return timestamp.toDate().toLocaleString('pt-BR');
     };
 
     const buildQuery = useCallback(() => {
@@ -177,6 +184,14 @@ function PaymentList() {
                     const description = payment.description || '';
                     const isLongDescription = description.length > 80;
 
+                    // Lógica para verificar se os botões já foram usados
+                    const isLinkSent = !!payment.linkSentAt;
+                    const isChargeSent = !!payment.chargeSentAt;
+                    const enviarClassName = `${styles.enviarButton} ${isLinkSent ? styles.actionUsed : ''}`;
+                    const cobrarClassName = `${styles.cobrarButton} ${isChargeSent ? styles.actionUsed : ''}`;
+                    const enviarTitle = isLinkSent ? `Link enviado em: ${formatTimestamp(payment.linkSentAt)}` : "Enviar Link";
+                    const cobrarTitle = isChargeSent ? `Cobrança enviada em: ${formatTimestamp(payment.chargeSentAt)}` : "Cobrar";
+
                     return (
                     <div key={payment.id} className={`${styles.paymentCard} ${styles[`card-${payment.status}`]}`}>
                         <div className={styles.cardHeader}>
@@ -187,7 +202,6 @@ function PaymentList() {
                                 {statusInfo.text}
                             </span>
                         </div>
-
                         <div className={styles.cardBody} onClick={() => handleShowDetails(payment)}>
                             <div className={styles.detailRow}>
                                 <span>Valor:</span>
@@ -205,7 +219,6 @@ function PaymentList() {
                                 </p>
                             </div>
                         </div>
-
                         <div className={styles.cardFooter}>
                             <div className={styles.socialIcons}>
                                 {cleanWhatsapp && (
@@ -219,8 +232,16 @@ function PaymentList() {
                                 <button onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(payment.paymentLink); alert('Link copiado!'); }} className={styles.copiarButton}>Copiar</button>
                                 {cleanWhatsapp && payment.paymentLink && (
                                     <>
-                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" className={styles.enviarButton}>Enviar</a>
-                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" className={styles.cobrarButton}>Cobrar</a>
+                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" 
+                                           className={enviarClassName} title={enviarTitle} 
+                                           onClick={(e) => handleMarkAsAction(e, payment.id, 'linkSent')}>
+                                           Enviar
+                                        </a>
+                                        <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" 
+                                           className={cobrarClassName} title={cobrarTitle}
+                                           onClick={(e) => handleMarkAsAction(e, payment.id, 'chargeSent')}>
+                                           Cobrar
+                                        </a>
                                     </>
                                 )}
                                 {payment.status === 'pending' && (
