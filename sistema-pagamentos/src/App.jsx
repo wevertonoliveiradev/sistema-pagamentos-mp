@@ -4,6 +4,7 @@ import './App.css';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './components/MainLayout';
+import ReloadPrompt from './components/ReloadPrompt';
 import DashboardPage from './pages/DashboardPage';
 import ClientsPage from './pages/ClientsPage';
 import ClientDetailPage from './pages/ClientDetailPage';
@@ -13,6 +14,7 @@ import SignupPage from './pages/SignupPage';
 function App() {
   return (
     <BrowserRouter>
+     <ReloadPrompt /> 
       <Routes>
         {/* Rotas Públicas (continuam as mesmas, fora do layout principal) */}
         <Route path="/login" element={<LoginPage />} />

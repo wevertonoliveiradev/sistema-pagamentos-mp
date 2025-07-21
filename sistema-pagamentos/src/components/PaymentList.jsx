@@ -82,25 +82,37 @@ function PaymentList() {
         setFilters(prev => ({ ...prev, [name]: value }));
     };
 
-    // NOVA FUNÇÃO para marcar a ação como feita
-    const handleMarkAsAction = async (e, paymentId, actionType) => {
+    // FUNÇÃO ATUALIZADA para marcar a ação, com nova lógica de confirmação
+    const handleMarkAsAction = (e, payment, actionType) => {
         e.stopPropagation();
-        
+        const fieldToCheck = actionType === 'linkSent' ? 'linkSentAt' : 'chargeSentAt';
         const fieldToUpdate = actionType === 'linkSent' ? 'linkSentAt' : 'chargeSentAt';
 
-        try {
-            const paymentRef = doc(db, 'payments', paymentId);
-            await updateDoc(paymentRef, {
-                [fieldToUpdate]: serverTimestamp()
-            });
-        } catch (error) {
-            console.error("Erro ao marcar ação: ", error);
+        const updateTimestamp = async () => {
+            try {
+                const paymentRef = doc(db, 'payments', payment.id);
+                await updateDoc(paymentRef, { [fieldToUpdate]: serverTimestamp() });
+            } catch (error) {
+                console.error("Erro ao marcar ação: ", error);
+            }
+        };
+
+        if (payment[fieldToCheck]) {
+            e.preventDefault(); // Impede a ação do link para poder perguntar
+            const confirmationMessage = `Esta ação já foi realizada em ${formatTimestamp(payment[fieldToCheck])}.\nDeseja executá-la novamente?`;
+            if (window.confirm(confirmationMessage)) {
+                updateTimestamp();
+                window.open(e.currentTarget.href, '_blank'); // Abre o link manualmente após confirmar
+            }
+        } else {
+            // Se for a primeira vez, apenas atualiza o timestamp.
+            // NÃO usamos e.preventDefault(), então o link abrirá naturalmente.
+            updateTimestamp();
         }
     };
     
-    // NOVA FUNÇÃO para formatar a data e hora
     const formatTimestamp = (timestamp) => {
-        if (!timestamp?.toDate) return '';
+        if (!timestamp?.toDate) return '...';
         return timestamp.toDate().toLocaleString('pt-BR');
     };
 
@@ -184,13 +196,12 @@ function PaymentList() {
                     const description = payment.description || '';
                     const isLongDescription = description.length > 80;
 
-                    // Lógica para verificar se os botões já foram usados
                     const isLinkSent = !!payment.linkSentAt;
                     const isChargeSent = !!payment.chargeSentAt;
                     const enviarClassName = `${styles.enviarButton} ${isLinkSent ? styles.actionUsed : ''}`;
                     const cobrarClassName = `${styles.cobrarButton} ${isChargeSent ? styles.actionUsed : ''}`;
-                    const enviarTitle = isLinkSent ? `Link enviado em: ${formatTimestamp(payment.linkSentAt)}` : "Enviar Link";
-                    const cobrarTitle = isChargeSent ? `Cobrança enviada em: ${formatTimestamp(payment.chargeSentAt)}` : "Cobrar";
+                    const enviarTitle = isLinkSent ? `Último envio em: ${formatTimestamp(payment.linkSentAt)} (clique para reenviar)` : "Enviar Link";
+                    const cobrarTitle = isChargeSent ? `Última cobrança em: ${formatTimestamp(payment.chargeSentAt)} (clique para reenviar)` : "Cobrar";
 
                     return (
                     <div key={payment.id} className={`${styles.paymentCard} ${styles[`card-${payment.status}`]}`}>
@@ -234,13 +245,13 @@ function PaymentList() {
                                     <>
                                         <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageEnvio}`} target="_blank" rel="noopener noreferrer" 
                                            className={enviarClassName} title={enviarTitle} 
-                                           onClick={(e) => handleMarkAsAction(e, payment.id, 'linkSent')}>
-                                           Enviar
+                                           onClick={(e) => handleMarkAsAction(e, payment, 'linkSent')}>
+                                           {isLinkSent ? 'Enviado ✔️' : 'Enviar'}
                                         </a>
                                         <a href={`https://wa.me/55${cleanWhatsapp}?text=${messageCobranca}`} target="_blank" rel="noopener noreferrer" 
                                            className={cobrarClassName} title={cobrarTitle}
-                                           onClick={(e) => handleMarkAsAction(e, payment.id, 'chargeSent')}>
-                                           Cobrar
+                                           onClick={(e) => handleMarkAsAction(e, payment, 'chargeSent')}>
+                                           {isChargeSent ? 'Cobrado ✔️' : 'Cobrar'}
                                         </a>
                                     </>
                                 )}
@@ -250,7 +261,7 @@ function PaymentList() {
                                         <button onClick={(e) => { e.stopPropagation(); handleCancelPayment(payment.id); }} className={styles.cancelButton}>Cancelar</button>
                                     </>
                                 )}
-                                <button onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }} className={styles.deleteButton}>Excluir</button>
+                                {/* <button onClick={(e) => { e.stopPropagation(); handleDeletePayment(payment.id); }} className={styles.deleteButton}>Excluir</button> */}
                             </div>
                         </div>
                     </div>
