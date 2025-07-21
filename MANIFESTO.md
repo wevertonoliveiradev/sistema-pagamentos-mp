@@ -1,22 +1,34 @@
-Manifesto do Projeto: Sistema de Pagamentos
-Versão: 3.0 (Segurança e Multi-Usuário)
-Data: 16 de Julho de 2025
+Manifesto do Projeto: Painel de Pagamentos
+Versão: 4.0 (Pronto para Entrega)
+Data: 21 de Julho de 2025
 
 1. Propósito do Projeto
-O objetivo deste sistema é criar uma interface web (painel) para a geração e o gerenciamento de cobranças de pagamento através da API do Mercado Pago. O sistema evoluiu para uma plataforma multi-usuário segura, onde cada usuário tem acesso exclusivo aos seus próprios clientes e pagamentos.
+O objetivo deste sistema é fornecer uma interface web (painel de controle) completa para a geração e gerenciamento de cobranças via Mercado Pago. O sistema foi desenvolvido como uma plataforma multi-usuário segura, onde cada usuário cadastrado possui acesso exclusivo e privado ao seu próprio conjunto de clientes e registros de pagamento.
 
-O painel permite o cadastro de clientes, a vinculação de pagamentos, o rastreio automático de status via webhooks e a visualização de dados em tempo real com funcionalidades avançadas de busca, filtro e paginação.
+O painel oferece um fluxo de trabalho completo, incluindo:
+
+Cadastro e gerenciamento de clientes (CRUD).
+
+Geração de pagamentos vinculados a clientes.
+
+Rastreio automático de status (Aprovado, Pendente, Falhou) através de webhooks do Mercado Pago.
+
+Funcionalidades manuais de gestão (Baixar, Cancelar pagamento).
+
+Visualização de dados em tempo real com funcionalidades avançadas de busca, filtro e paginação.
+
+Um sistema de autenticação seguro para proteger o acesso aos dados.
 
 2. Visão Geral da Arquitetura
-O projeto é construído sobre uma arquitetura moderna separando o frontend do backend.
+O projeto utiliza uma arquitetura moderna que separa o frontend (interface do usuário) do backend (lógica de negócio).
 
-Frontend: Uma aplicação React (Single Page Application) construída com Vite e react-router-dom para navegação. É responsável por toda a interface do usuário e não contém nenhuma chave secreta.
+Frontend: Uma aplicação React (Single Page Application) construída com Vite e react-router-dom para navegação. É responsável por toda a interface do usuário e não contém chaves de API secretas.
 
 Backend: Funções "serverless" na plataforma Google Firebase (Cloud Functions). É o cérebro do sistema, responsável por se comunicar de forma segura com a API do Mercado Pago e receber webhooks.
 
-Banco de Dados: Google Firestore, usado para persistir os registros de clientes e pagamentos.
+Banco de Dados: Google Firestore, um banco de dados NoSQL em tempo real, usado para persistir os registros de clientes e pagamentos.
 
-Autenticação: Firebase Authentication gerencia todo o ciclo de vida do usuário (cadastro, login, logout) e atua como o "porteiro" da aplicação.
+Autenticação: Firebase Authentication gerencia todo o ciclo de vida do usuário (cadastro, login, logout) e atua como o "porteiro" da aplicação, garantindo o acesso seguro.
 
 3. Tecnologias Utilizadas
 Frontend: React, Vite, JavaScript, CSS Modules, React Router DOM
@@ -29,21 +41,27 @@ Plataforma "Backend-as-a-Service": Google Firebase (Functions, Firestore, Authen
 
 Gateway de Pagamento: Mercado Pago API
 
-4. Estrutura de Pastas e Arquivos Atualizada
+4. Estrutura de Pastas e Arquivos Final
 sistema-pagamentos/
 ├── functions/            # Código do Backend (Node.js)
 │   └── index.js
 │   └── package.json
+│
+├── public/               # Ícones e arquivos estáticos
+│   └── pwa-192x192.png
+│   └── pwa-512x512.png
 │
 ├── src/                  # Código do Frontend (React)
 │   ├── components/       # Componentes reutilizáveis da UI
 │   │   ├── AuthForm.jsx
 │   │   ├── ClientFormModal.jsx
 │   │   ├── DescriptionModal.jsx
+│   │   ├── MainLayout.jsx
 │   │   ├── Navbar.jsx
 │   │   ├── PaymentDetailsModal.jsx
 │   │   ├── PaymentModal.jsx
-│   │   └── ProtectedRoute.jsx
+│   │   ├── ProtectedRoute.jsx
+│   │   └── ReloadPrompt.jsx
 │   │
 │   ├── context/          # Contextos Globais do React
 │   │   └── AuthContext.jsx
@@ -60,14 +78,17 @@ sistema-pagamentos/
 │   ├── firebase.js       # Configuração e inicialização do Firebase SDK
 │   └── main.jsx          # Ponto de entrada da aplicação React
 │
-├── .env.local
-├── .gitignore
-├── firebase.json
+├── .env.local            # Chaves de configuração do frontend
+├── .firebaserc           # Vincula a pasta a um projeto Firebase
+├── firebase.json         # Configurações de deploy do Firebase
 ├── firestore.indexes.json
-├── firestore.rules
+├── firestore.rules       # Regras de segurança do banco de dados
 ├── index.html
-└── package.json
+├── package.json          # Dependências do frontend
+└── vite.config.js        # Configurações do Vite e do PWA
 5. Etapas Concluídas (Status Atual)
+O sistema está com seu ciclo de desenvolvimento principal concluído.
+
 Versão 1.0 (Base Funcional)
 [x] Setup do Ambiente: Configuração inicial com React/Vite e Firebase.
 
@@ -82,16 +103,16 @@ Versão 2.0 (Painel Avançado)
 
 [x] Refatoração da Criação de Pagamentos: Fluxo alterado para um modal que vincula pagamentos a clientes.
 
-[x] Tabela de Pagamentos Avançada: Visualização transformada em uma tabela de dados interativa.
+[x] Layout Moderno (Cards): A visualização de pagamentos foi transformada em um layout de cards responsivo.
 
-[x] Filtros, Busca e Paginação: Implementação de filtros dinâmicos e sistema de "Carregar Mais".
+[x] Filtros e Paginação: Implementação de filtros dinâmicos e sistema de "Carregar Mais".
 
 [x] Detalhes por Cliente (Extrato): Criação de uma página de detalhes para cada cliente com seu histórico e saldo.
 
-Versão 3.0 (Segurança e Multi-Usuário)
-[x] Implementação de Autenticação: Adicionado fluxo completo de Cadastro e Login com Email e Senha.
+[x] Funcionalidades de Gestão: Adicionadas as opções de "Baixar" e "Cancelar" pagamentos manualmente.
 
-[x] Gestão de Sessão: Criação de um AuthContext para gerenciar o estado do usuário logado em toda a aplicação.
+Versão 3.0 (Segurança e Finalização)
+[x] Implementação de Autenticação: Adicionado fluxo completo de Cadastro, Login/Logout e sessão persistente.
 
 [x] Proteção de Rotas: Implementado um sistema que redireciona usuários não logados para a página de login.
 
@@ -99,63 +120,25 @@ Versão 3.0 (Segurança e Multi-Usuário)
 
 [x] Regras de Segurança do Firestore: As regras do banco de dados foram reescritas para garantir que um usuário só possa acessar os dados que ele mesmo criou.
 
-6. Próximas Etapas e Melhorias Futuras
-O sistema está com sua funcionalidade principal 100% completa e segura. As próximas etapas são focadas em aprimoramento da interface e publicação.
+[x] Progressive Web App (PWA): O sistema agora pode ser "instalado" em desktops e celulares, com um mecanismo de atualização para novas versões.
 
-[ ] Melhoria de Layout e Responsividade (Próxima Etapa Focada):
+6. Próximas Etapas
+[ ] Migração para o Ambiente do Cliente: O próximo passo planejado é transferir e configurar toda a aplicação para rodar no projeto Firebase do cliente final. Isso envolve:
 
-[ ] Revisar e refinar o layout de todas as páginas para garantir uma experiência de usuário (UX) coesa e profissional.
+[ ] Fazer uma cópia do código-fonte.
 
-[ ] Garantir que todos os componentes (tabelas, modais, formulários) sejam totalmente responsivos e fáceis de usar em dispositivos móveis.
+[ ] Vincular a cópia ao novo projeto Firebase do cliente.
 
-[ ] Deploy e Produção:
+[ ] Atualizar todas as chaves de configuração do frontend (.env.local) e backend (functions config).
 
-[ ] Publicar a aplicação React em uma plataforma de hospedagem como Vercel ou Netlify para que possa ser acessada de qualquer lugar.
+[ ] Configurar o banco de dados do cliente (Regras de Segurança e Índices).
 
-[ ] Novas Funcionalidades (Opcional):
+[ ] Fazer o deploy completo da aplicação (Functions e Hosting) no novo ambiente.
 
-[ ] KPIs e Gráficos: Adicionar um painel visual com gráficos mostrando o total arrecadado por mês, pagamentos por status, etc.
+[ ] Configurar as credenciais de produção do Mercado Pago do cliente.
 
-[ ] Exportação de Dados: Criar uma função para exportar a lista de pagamentos filtrada para um arquivo CSV ou Excel.
+[ ] Publicação e Treinamento:
 
+[ ] Publicar a aplicação React em sua URL de produção final no Firebase Hosting.
 
-
-
-Passo 1: Obter sua Chave Real (Access Token de Produção)
-Primeiro, você precisa pegar sua chave "de verdade" no painel do Mercado Pago.
-
-Acesse o painel de desenvolvedor do Mercado Pago: https://www.mercadopago.com.br/developers/panel
-
-Clique em "Suas aplicações" no menu esquerdo e selecione a sua aplicação.
-
-Dentro da sua aplicação, clique na aba "Credenciais de Produção".
-
-Copie o seu Access Token. É a chave mais longa, que geralmente começa com APP_USR-....
-
-Passo 2: Atualizar a Chave no Ambiente do Firebase
-Agora, vamos usar o terminal para substituir a chave de teste antiga pela nova chave de produção que você acabou de copiar.
-
-Abra o seu terminal e navegue até a pasta functions do seu projeto.
-
-Execute o seguinte comando, colando a sua chave de produção no lugar de SUA_CHAVE_REAL_DE_PRODUÇÃO_AQUI. É importante usar as aspas.
-
-Bash
-
-firebase functions:config:set mercadopago.token="SUA_CHAVE_REAL_DE_PRODUÇÃO_AQUI"
-Aperte Enter. O terminal deve confirmar que a configuração foi atualizada (Functions config updated.). Este comando sobrescreve a chave antiga de forma segura nos servidores do Google.
-
-Passo 3: Publicar a Alteração (Deploy)
-Para que a sua função no ar comece a usar a nova chave, você precisa fazer o deploy novamente. Isso força a função a recarregar suas configurações.
-
-Ainda no terminal, dentro da pasta functions, rode o comando:
-
-Bash
-
-firebase deploy --only functions
-Aguarde o processo ser concluído.
-
-E pronto!
-
-A partir do momento em que o deploy for finalizado, seu sistema estará 100% configurado para usar suas credenciais de produção.
-
-Aviso Importante: Lembre-se que, a partir deste momento, qualquer pagamento gerado e pago através do sistema será uma transação real e movimentará dinheiro de verdade na sua conta do Mercado Pago.
+[ ] Realizar o treinamento com o cliente para a criação do usuário administrador e uso do sistema.
